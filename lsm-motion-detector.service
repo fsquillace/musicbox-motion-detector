@@ -1,0 +1,10 @@
+[Unit]
+Description=Raspberry Pi LSM Player motion detector
+
+[Service]
+TimeoutStartSec=0
+Restart=always
+ExecStart=/usr/local/bin/lsm-motion-detector
+
+[Install]
+WantedBy=multi-user.target

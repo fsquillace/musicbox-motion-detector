@@ -1,0 +1,76 @@
+#!/usr/bin/env python3
+
+import logging
+
+import sys
+import requests
+import time
+from datetime import datetime, timedelta
+
+import RPi.GPIO as GPIO
+from signal import signal, SIGABRT, SIGILL, SIGINT, SIGSEGV, SIGTERM
+
+logger = logging.getLogger()
+logger.setLevel(logging.INFO)
+
+handler = logging.StreamHandler(sys.stdout)
+formatter = logging.Formatter('%(asctime)s - %(levelname)s - %(message)s')
+handler.setFormatter(formatter)
+logger.addHandler(handler)
+
+# The pir connect to pin17
+PIR_PIN = 17
+# How often we check the PIR sensor.
+SLEEP_INTERVAL = timedelta(seconds=0.5)
+
+DELAY = timedelta(minutes=5)
+HTTP_TIMEOUT = timedelta(seconds=5)
+
+
+def lms(action='play'):
+    if action == 'play':
+        retval = True
+    elif action == 'pause':
+        retval = False
+    body = {"method": "slim.request", "params": ["max2play", [action]]}
+    requests.post('http://localhost:9000/jsonrpc.js', json=body, timeout=HTTP_TIMEOUT.total_seconds())
+    last_known_motion = datetime.now()
+    return retval, last_known_motion
+
+
+def main_loop():
+    logging.info("Starting Motion Detection...")
+    play_active, last_known_motion = lms('pause')
+    while True:
+        pir_val = GPIO.input(PIR_PIN)
+        if pir_val==GPIO.HIGH:
+            logging.info("Detected movement. Activating player...")
+            play_active, last_known_motion = lms('play')
+
+        if play_active:
+            if datetime.now() - last_known_motion > DELAY:
+                logging.info(f"No movement in the last {DELAY}. Pausing player...")
+                play_active, _ = lms('pause')
+        time.sleep(SLEEP_INTERVAL.total_seconds())
+
+def setup():
+    # Set the GPIO modes to BCM Numbering
+    GPIO.setmode(GPIO.BCM)
+    # Set PIR_PIN to input
+    GPIO.setup(PIR_PIN, GPIO.IN)
+
+def destroy():
+    logging.info("Exiting: releasing GPIO resources.")
+    lms('pause')
+    GPIO.cleanup()
+
+if __name__ == '__main__':
+    def exit_handler(*args):
+        destroy()
+        sys.exit(0)
+
+    for sig in (SIGABRT, SIGILL, SIGINT, SIGSEGV, SIGTERM):
+        signal(sig, exit_handler)
+
+    setup()
+    main_loop()

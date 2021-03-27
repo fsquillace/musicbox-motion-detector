@@ -1,0 +1,20 @@
+#! /bin/sh
+
+set -e
+
+echo "=> Installing Pip and dependencies...\n"
+sudo apt install -y python3-pip
+sudo pip3 install -r requirements.txt
+
+echo "=> Installing LSM motion detector...\n"
+sudo cp lsm-motion-detector /usr/local/bin/
+sudo chmod +x /usr/local/bin/lsm-motion-detector
+
+echo "=> Starting LSM motion detector via Systemd...\n"
+sudo cp lsm-motion-detector.service /lib/systemd/system/lsm-motion-detector.service
+
+sudo systemctl daemon-reload
+sudo systemctl enable lsm-motion-detector.service
+sudo systemctl restart lsm-motion-detector.service
+
+echo "LSM motion detector installed."
