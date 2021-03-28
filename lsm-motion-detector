@@ -28,11 +28,15 @@ HTTP_TIMEOUT = timedelta(seconds=5)
 
 
 def lms(action='play'):
+    # Doc about API here:
+    # https://github.com/elParaguayo/LMS-CLI-Documentation/blob/master/LMS-CLI.md
     if action == 'play':
         retval = True
+        action = ['play']
     elif action == 'pause':
         retval = False
-    body = {"method": "slim.request", "params": ["max2play", [action]]}
+        action = ['pause', '1']
+    body = {"method": "slim.request", "params": ["max2play", action]}
     requests.post('http://localhost:9000/jsonrpc.js', json=body, timeout=HTTP_TIMEOUT.total_seconds())
     last_known_motion = datetime.now()
     return retval, last_known_motion

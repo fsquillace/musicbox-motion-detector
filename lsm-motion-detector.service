@@ -4,6 +4,8 @@ Description=Raspberry Pi LSM Player motion detector
 [Service]
 TimeoutStartSec=0
 Restart=always
+StartLimitBurst=0
+StartLimitIntervalSec=60
 ExecStart=/usr/local/bin/lsm-motion-detector
 
 [Install]
